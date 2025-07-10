@@ -5,7 +5,7 @@ from fastapi import FastAPI
 from starlette.middleware.cors import CORSMiddleware
 from sqlalchemy import text
 from core.config import settings
-from middleware.geo_middleware import GeolocationMiddleware
+from middleware.geo_middleware import GeolocationMiddleware, IPMiddleware
 from api.controllers.complaints_controller import router as complaints_router
 from database.session import engine
 from models.complaint_model import Base
@@ -35,6 +35,7 @@ app.add_middleware(
 )
 
 app.add_middleware(GeolocationMiddleware, enable_geolocation=True)
+app.add_middleware(IPMiddleware)
 
 app.include_router(complaints_router)
 
