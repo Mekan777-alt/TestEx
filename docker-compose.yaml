@@ -49,6 +49,8 @@ services:
       - ./google-credentials.json:/app/data/google-credentials.json:ro
     networks:
       - complaints_network
+    tmpfs:
+      - /tmp:exec,size=100M
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
       interval: 30s
@@ -90,7 +92,6 @@ services:
       timeout: 10s
       retries: 3
       start_period: 60s
-
 
 volumes:
   complaints_data:
