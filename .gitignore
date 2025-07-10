@@ -1,0 +1,6 @@
+.idea
+complaints.db
+technical_complaints_workflow.json
+__pycache__
+.env
+.DS_Store

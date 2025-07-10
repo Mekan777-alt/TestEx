@@ -1,0 +1,105 @@
+services:
+  complaints-api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: complaints-api
+    restart: always
+    command: sh /app/utils/start_api.sh
+    ports:
+      - "8000:8000"
+    environment:
+      # База данных
+      - DB_NAME=/app/data/complaints.db
+
+      # Sentiment Analysis API
+      - SENTIMENT_API_KEY=${SENTIMENT_API_KEY}
+      - SENTIMENT_API_URL=${SENTIMENT_API_URL:-https://api.apilayer.com/sentiment_analysis}
+      - SENTIMENT_API_TIMEOUT=${SENTIMENT_API_TIMEOUT:-10}
+
+      # OpenAI
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - OPENAI_MODEL=${OPENAI_MODEL:-gpt-3.5-turbo}
+      - OPENAI_MAX_TOKENS=${OPENAI_MAX_TOKENS:-50}
+      - OPENAI_TEMPERATURE=${OPENAI_TEMPERATURE:-0.1}
+
+      # Telegram
+      - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN}
+      - TELEGRAM_CHAT_ID=${TELEGRAM_CHAT_ID}
+
+      # Google Sheets
+      - GOOGLE_CREDENTIALS_PATH=/app/data/google-credentials.json
+      - GOOGLE_SPREADSHEET_ID=${GOOGLE_SPREADSHEET_ID}
+      - GOOGLE_SHEET_NAME=${GOOGLE_SHEET_NAME:-Жалобы по оплате}
+
+      # Опциональные API
+      - SPAM_API_KEY=${SPAM_API_KEY}
+      - SPAM_API_URL=${SPAM_API_URL:-https://api.api-ninjas.com/v1/spamcheck}
+      - IP_API_URL=${IP_API_URL:-http://ip-api.com/json}
+
+      # Настройки приложения
+      - APP_NAME=${APP_NAME:-Complaints Processing API}
+      - DEBUG=${DEBUG:-false}
+      - HOST=0.0.0.0
+      - PORT=8000
+      - API_BASE_URL=http://complaints-api:8000
+    volumes:
+      - complaints_data:/app/data
+      - complaints_logs:/app/logs
+      - ./google-credentials.json:/app/data/google-credentials.json:ro
+    networks:
+      - complaints_network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # n8n для автоматизации
+  n8n:
+    image: n8nio/n8n:latest
+    container_name: complaints-n8n
+    restart: unless-stopped
+    ports:
+      - "5678:5678"
+    environment:
+      - DB_TYPE=sqlite
+      - DB_SQLITE_DATABASE=/home/node/.n8n/database.sqlite
+      - N8N_BASIC_AUTH_ACTIVE=true
+      - N8N_BASIC_AUTH_USER=admin
+      - N8N_BASIC_AUTH_PASSWORD=admin123
+      - N8N_HOST=0.0.0.0
+      - N8N_PORT=5678
+      - N8N_PROTOCOL=http
+      - NODE_ENV=production
+      - WEBHOOK_URL=http://localhost:5678
+      # Разрешаем доступ к локальным хостам
+      - N8N_SKIP_WEBHOOK_DEREGISTRATION_SHUTDOWN=true
+    volumes:
+      - n8n_data:/home/node/.n8n
+      - ./n8n-workflows:/opt/n8n-workflows:ro
+    networks:
+      - complaints_network
+    depends_on:
+      complaints-api:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:5678/healthz"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+
+volumes:
+  complaints_data:
+    driver: local
+  complaints_logs:
+    driver: local
+  n8n_data:
+    driver: local
+
+networks:
+  complaints_network:
+    driver: bridge
