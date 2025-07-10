@@ -58,6 +58,8 @@ class OptionalAPISettings(BaseSettings):
     spam_api_key: str = Field("", validation_alias='SPAM_API_KEY')
     spam_api_url: str = Field("https://api.apilayer.com/spamchecker?threshold=3", validation_alias='SPAM_API_URL')
 
+    ip_api_url: str = Field("http://ip-api.com/json", validation_alias='IP_API_URL')
+
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding='utf-8', extra='ignore')
 
 
