@@ -1,0 +1,480 @@
+{
+  "name": "My workflow",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "hour"
+            }
+          ]
+        }
+      },
+      "id": "1ade1a41-bc42-4d09-af32-d64b53f584ef",
+      "name": "Schedule Trigger",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        80,
+        336
+      ]
+    },
+    {
+      "parameters": {
+        "url": "=http://host.docker.internal:8000/complaints/",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "hours",
+              "value": "1"
+            },
+            {
+              "name": "status",
+              "value": "open"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "1fab0db6-2736-4276-be9f-249e167b67c2",
+      "name": "Get Technical Complaints",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [
+        272,
+        336
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{ $json.length > 0 }}",
+              "operation": "=equal",
+              "value2": "={{ false }}"
+            }
+          ]
+        }
+      },
+      "id": "ea12cebc-f11d-4dd3-b7e6-46a63e0f90b0",
+      "name": "Check If Complaints Exist",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        480,
+        336
+      ],
+      "alwaysOutputData": false,
+      "executeOnce": false
+    },
+    {
+      "parameters": {
+        "chatId": "5443287345",
+        "text": "=🔧 **ТЕХНИЧЕСКАЯ ЖАЛОБА #{{ $json.id }}**\n\n📝 **Текст:** {{ $json.text }}\n\n😔 **Тональность:** {{ $json.sentiment }}\n📅 **Время:** {{ $json.timestamp.toDateTime() }}\n🌍 **Локация:** {{ $json.ip_location || 'Неизвестно' }}\n\n🤖 Жалоба автоматически обработана",
+        "additionalFields": {}
+      },
+      "id": "04c8341d-4391-4029-ad2e-56df50c3c2e3",
+      "name": "Send Telegram Notification",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.1,
+      "position": [
+        1104,
+        112
+      ],
+      "webhookId": "adb8492f-d577-48bb-adc4-f7751442980f",
+      "credentials": {
+        "telegramApi": {
+          "id": "ybxzaZPkg9eQM2cf",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "PATCH",
+        "url": "=http://host.docker.internal:8000/complaints/{{ $node[\"Сериализация\"].json.id }}/status",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "status",
+              "value": "closed"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "c99b5963-5412-457c-bbc4-8ba5e448811b",
+      "name": "Close Complaint",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [
+        1424,
+        208
+      ]
+    },
+    {
+      "parameters": {},
+      "id": "44db827d-feee-4049-8bf3-d0b41e01c060",
+      "name": "No Operation",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [
+        1104,
+        544
+      ]
+    },
+    {
+      "parameters": {
+        "language": "python",
+        "pythonCode": "complaints = _input.all()[0]['json']['complaints']\nreturn [{'json': complaint} for complaint in complaints]"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        656,
+        240
+      ],
+      "id": "e47a56d5-7a04-4f85-b649-a1054ab0beef",
+      "name": "Сериализация",
+      "executeOnce": true
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.category }}",
+                    "rightValue": "техническая",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "b4635984-77ff-4d22-a860-86e5f4b97f5e"
+                  }
+                ],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "ef5a0948-7d92-4c7e-a91e-e4f50f29217c",
+                    "leftValue": "={{ $json.category }}",
+                    "rightValue": "оплата",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              }
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "ab4019b1-5d08-45e0-9372-dee0da593744",
+                    "leftValue": "={{ $json.category }}",
+                    "rightValue": "другое",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              }
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [
+        832,
+        224
+      ],
+      "id": "d970aace-5511-4fd0-9f30-b19d6cd81356",
+      "name": "Проверка условий"
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "1lEju0JdcuJ7uTqxPuv7kXtstDRTcC80a6jP8SS2XKeE",
+          "mode": "list",
+          "cachedResultName": "Жалобы по оплате",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1lEju0JdcuJ7uTqxPuv7kXtstDRTcC80a6jP8SS2XKeE/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Лист1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1lEju0JdcuJ7uTqxPuv7kXtstDRTcC80a6jP8SS2XKeE/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "Дата": "={{ $json.timestamp.toDateTime() }}",
+            "ID жалобы": "={{ $json.id }}",
+            "Текст жалобы": "={{ $json.text}}",
+            "Тональность": "={{ $json.sentiment }}",
+            "IP локация": "={{ $json.ip_location}}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "Дата",
+              "displayName": "Дата",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "ID жалобы",
+              "displayName": "ID жалобы",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Текст жалобы",
+              "displayName": "Текст жалобы",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Тональность",
+              "displayName": "Тональность",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "IP локация",
+              "displayName": "IP локация",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.6,
+      "position": [
+        1104,
+        336
+      ],
+      "id": "d4cfc6df-b0eb-4943-8924-c624245c3a0e",
+      "name": "Append row in sheet",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "hXvByKPhFiSVtOJr",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [
+        1648,
+        208
+      ],
+      "id": "87dc9406-d348-4542-ad18-cf45fa945d20",
+      "name": "No Operation, do nothing"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "Get Technical Complaints",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Technical Complaints": {
+      "main": [
+        [
+          {
+            "node": "Check If Complaints Exist",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check If Complaints Exist": {
+      "main": [
+        [
+          {
+            "node": "Сериализация",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "No Operation",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send Telegram Notification": {
+      "main": [
+        [
+          {
+            "node": "Close Complaint",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Close Complaint": {
+      "main": [
+        [
+          {
+            "node": "No Operation, do nothing",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "No Operation": {
+      "main": [
+        []
+      ]
+    },
+    "Сериализация": {
+      "main": [
+        [
+          {
+            "node": "Проверка условий",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Проверка условий": {
+      "main": [
+        [
+          {
+            "node": "Send Telegram Notification",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Append row in sheet",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "No Operation",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Append row in sheet": {
+      "main": [
+        [
+          {
+            "node": "Close Complaint",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "80a307d8-2753-407c-8083-1e205044c67a",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "ea6b72ce74167be7ac782ff21435fa867a583bfcc29ee85ffb0925828ed0da78"
+  },
+  "id": "rsB0D0BhinYnir2t",
+  "tags": [
+    {
+      "name": "Technical Complaints",
+      "id": "gYZEk5zJFkmmaCGd",
+      "createdAt": "2025-07-09T13:15:32.328Z",
+      "updatedAt": "2025-07-09T13:15:32.328Z"
+    }
+  ]
+}
