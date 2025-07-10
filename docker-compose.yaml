@@ -10,7 +10,7 @@ services:
       - "8000:8000"
     environment:
       # База данных
-      - DB_NAME=/app/data/complaints.db
+      - DB_NAME=complaints.db
 
       # Sentiment Analysis API
       - SENTIMENT_API_KEY=${SENTIMENT_API_KEY}
@@ -51,12 +51,6 @@ services:
       - complaints_network
     tmpfs:
       - /tmp:exec,size=100M
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 40s
 
   # n8n для автоматизации
   n8n:
@@ -84,8 +78,7 @@ services:
     networks:
       - complaints_network
     depends_on:
-      complaints-api:
-        condition: service_healthy
+      - complaints-api
     healthcheck:
       test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:5678/healthz"]
       interval: 30s

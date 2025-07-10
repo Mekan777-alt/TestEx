@@ -7,39 +7,6 @@ from typing import Optional
 logger = logging.getLogger(__name__)
 
 
-class IPMiddleware(BaseHTTPMiddleware):
-
-    def __init__(self, app: ASGIApp):
-        super().__init__(app)
-
-    def extract_client_ip(self, request: Request) -> Optional[str]:
-
-        return request.client.host if request.client else None
-
-
-    async def dispatch(self, request: Request, call_next) -> Response:
-        """
-        Основной метод middleware
-        """
-        client_ip = self.extract_client_ip(request)
-
-        request.state.client_ip = client_ip
-
-        if client_ip:
-            logger.info(f"Request from IP: {client_ip} to {request.url.path}")
-        else:
-            logger.warning(f"Could not determine client IP for {request.url.path}")
-
-        # Продолжаем обработку запроса
-        response = await call_next(request)
-
-        # Опционально можем добавить IP в заголовки ответа
-        if client_ip:
-            response.headers["X-Client-IP-Detected"] = client_ip
-
-        return response
-
-
 class GeolocationMiddleware(BaseHTTPMiddleware):
 
     def __init__(self, app: ASGIApp, enable_geolocation: bool = True):
