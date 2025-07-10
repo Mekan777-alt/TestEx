@@ -70,7 +70,7 @@ class ComplaintResponseWorkflow(ComplaintResponse):
 
 class ComplaintList(BaseModel):
     """Схема для списка жалоб"""
-    complaints: List[ComplaintResponse] = Field(
+    complaints: List[ComplaintResponseWorkflow] = Field(
         ...,
         description="Список жалоб"
     )
